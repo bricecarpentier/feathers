@@ -310,6 +310,8 @@ package feathers.controls
 				{
 					sizeInvalid = this.handleManualLayout() || sizeInvalid;
 				}
+				//final validation to avoid juggler next frame issues
+				this.validateChildren();
 			}
 
 			if(sizeInvalid || clippingInvalid)
@@ -370,6 +372,22 @@ package feathers.controls
 		/**
 		 * @private
 		 */
+		protected function validateChildren():void
+		{
+			const itemCount:int = this.items.length;
+			for(var i:int = 0; i < itemCount; i++)
+			{
+				var item:DisplayObject = this.items[i];
+				if(item is IFeathersControl)
+				{
+					IFeathersControl(item).validate();
+				}
+			}
+		}
+
+		/**
+		 * @private
+		 */
 		protected function refreshMXMLContent():void
 		{
 			if(!this._mxmlContent || this._mxmlContentIsReady)
@@ -390,7 +408,7 @@ package feathers.controls
 		 */
 		protected function refreshClipRect():void
 		{
-			if(this._clipContent && this.actualWidth > 0 && this.actualHeight > 0)
+			if(this._clipContent)
 			{
 				if(!this.clipRect)
 				{

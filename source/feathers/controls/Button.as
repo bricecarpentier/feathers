@@ -102,7 +102,7 @@ package feathers.controls
 		 *
 		 * <p>An alternate name should always be added to a component's
 		 * <code>nameList</code> before the component is added to the stage for
-		 * the first time.</p>
+		 * the first time. If it is added later, it will be ignored.</p>
 		 *
 		 * <p>In the following example, the call-to-action style is applied to
 		 * a button:</p>
@@ -124,7 +124,7 @@ package feathers.controls
 		 *
 		 * <p>An alternate name should always be added to a component's
 		 * <code>nameList</code> before the component is added to the stage for
-		 * the first time.</p>
+		 * the first time. If it is added later, it will be ignored.</p>
 		 *
 		 * <p>In the following example, the quiet button style is applied to
 		 * a button:</p>
@@ -148,7 +148,7 @@ package feathers.controls
 		 *
 		 * <p>An alternate name should always be added to a component's
 		 * <code>nameList</code> before the component is added to the stage for
-		 * the first time.</p>
+		 * the first time. If it is added later, it will be ignored.</p>
 		 *
 		 * <p>In the following example, the danger button style is applied to
 		 * a button:</p>
@@ -170,7 +170,7 @@ package feathers.controls
 		 *
 		 * <p>An alternate name should always be added to a component's
 		 * <code>nameList</code> before the component is added to the stage for
-		 * the first time.</p>
+		 * the first time. If it is added later, it will be ignored.</p>
 		 *
 		 * <p>In the following example, the back button style is applied to
 		 * a button:</p>
@@ -192,7 +192,7 @@ package feathers.controls
 		 *
 		 * <p>An alternate name should always be added to a component's
 		 * <code>nameList</code> before the component is added to the stage for
-		 * the first time.</p>
+		 * the first time. If it is added later, it will be ignored.</p>
 		 *
 		 * <p>In the following example, the forward button style is applied to
 		 * a button:</p>
@@ -391,11 +391,6 @@ package feathers.controls
 		 * <p>For internal use in subclasses.</p>
 		 */
 		protected var touchPointID:int = -1;
-
-		/**
-		 * @private
-		 */
-		protected var _isHoverSupported:Boolean = false;
 		
 		/**
 		 * @private
@@ -2670,9 +2665,9 @@ package feathers.controls
 				this.createLabel();
 			}
 			
-			if(textRendererInvalid || dataInvalid)
+			if(textRendererInvalid || stateInvalid || dataInvalid)
 			{
-				this.refreshLabelData();
+				this.refreshLabel();
 			}
 
 			if(stylesInvalid || stateInvalid || selectedInvalid)
@@ -2853,10 +2848,11 @@ package feathers.controls
 		/**
 		 * @private
 		 */
-		protected function refreshLabelData():void
+		protected function refreshLabel():void
 		{
 			this.labelTextRenderer.text = this._label;
-			this.labelTextRenderer.visible = this._label && this._label.length > 0;
+			this.labelTextRenderer.visible = this._label !== null && this._label.length > 0;
+			this.labelTextRenderer.isEnabled = this._isEnabled;
 		}
 
 		/**
@@ -2913,6 +2909,10 @@ package feathers.controls
 			{
 				this.currentIcon = DisplayObject(this._iconSelector.updateValue(this, this._currentState, this.currentIcon));
 			}
+			if(this.currentIcon is IFeathersControl)
+			{
+				IFeathersControl(this.currentIcon).isEnabled = this._isEnabled;
+			}
 			if(this.currentIcon != oldIcon)
 			{
 				if(oldIcon)
@@ -2921,7 +2921,9 @@ package feathers.controls
 				}
 				if(this.currentIcon)
 				{
-					this.addChild(this.currentIcon);
+					//we want the icon to appear below the label text renderer
+					var index:int = this.getChildIndex(DisplayObject(this.labelTextRenderer));
+					this.addChildAt(this.currentIcon, index);
 				}
 			}
 		}
@@ -3213,16 +3215,7 @@ package feathers.controls
 			this.removeEventListener(Event.ENTER_FRAME, longPress_enterFrameHandler);
 			if(this._isEnabled)
 			{
-				if(this._isHoverSupported && touch)
-				{
-					touch.getLocation(this.stage, HELPER_POINT);
-					const isInBounds:Boolean = this.contains(this.stage.hitTest(HELPER_POINT, true));
-					this.currentState = isInBounds ? STATE_HOVER : STATE_UP;
-				}
-				else
-				{
-					this.currentState = STATE_UP;
-				}
+				this.currentState = STATE_UP;
 			}
 			else
 			{
@@ -3282,6 +3275,7 @@ package feathers.controls
 				var touch:Touch = event.getTouch(this, null, this.touchPointID);
 				if(!touch)
 				{
+					//this should never happen
 					return;
 				}
 
@@ -3333,7 +3327,6 @@ package feathers.controls
 				if(touch)
 				{
 					this.currentState = STATE_HOVER;
-					this._isHoverSupported = true;
 					return;
 				}
 
