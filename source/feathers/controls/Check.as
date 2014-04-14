@@ -1,12 +1,14 @@
 /*
 Feathers
-Copyright 2012-2013 Joshua Tynjala. All Rights Reserved.
+Copyright 2012-2014 Joshua Tynjala. All Rights Reserved.
 
 This program is free software. You can redistribute and/or modify it in
 accordance with the terms of the accompanying license agreement.
 */
 package feathers.controls
 {
+	import feathers.skins.IStyleProvider;
+
 	import flash.errors.IllegalOperationError;
 
 	[Exclude(name="isToggle",kind="property")]
@@ -31,10 +33,20 @@ package feathers.controls
 	public class Check extends Button
 	{
 		/**
+		 * The default <code>IStyleProvider</code> for all <code>Check</code>
+		 * components.
+		 *
+		 * @default null
+		 * @see feathers.core.FeathersControl#styleProvider
+		 */
+		public static var styleProvider:IStyleProvider;
+
+		/**
 		 * Constructor.
 		 */
 		public function Check()
 		{
+			this._styleProvider = Check.styleProvider;
 			super.isToggle = true;
 		}
 

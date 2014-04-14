@@ -1,6 +1,6 @@
 /*
 Feathers
-Copyright 2012-2013 Joshua Tynjala. All Rights Reserved.
+Copyright 2012-2014 Joshua Tynjala. All Rights Reserved.
 
 This program is free software. You can redistribute and/or modify it in
 accordance with the terms of the accompanying license agreement.
@@ -9,14 +9,15 @@ package feathers.controls
 {
 	import feathers.core.FeathersControl;
 	import feathers.core.IFeathersControl;
+	import feathers.core.IValidating;
 	import feathers.events.FeathersEventType;
 	import feathers.layout.ILayout;
 	import feathers.layout.ILayoutDisplayObject;
 	import feathers.layout.IVirtualLayout;
 	import feathers.layout.LayoutBoundsResult;
 	import feathers.layout.ViewPortBounds;
+	import feathers.skins.IStyleProvider;
 
-	import flash.geom.Point;
 	import flash.geom.Rectangle;
 
 	import starling.display.DisplayObject;
@@ -61,10 +62,20 @@ package feathers.controls
 		protected static const INVALIDATION_FLAG_CLIPPING:String = "clipping";
 
 		/**
+		 * The default <code>IStyleProvider</code> for all <code>LayoutGroup</code>
+		 * components.
+		 *
+		 * @default null
+		 * @see feathers.core.FeathersControl#styleProvider
+		 */
+		public static var styleProvider:IStyleProvider;
+
+		/**
 		 * Constructor.
 		 */
 		public function LayoutGroup()
 		{
+			this._styleProvider = LayoutGroup.styleProvider;
 		}
 
 		/**
@@ -231,7 +242,25 @@ package feathers.controls
 			{
 				child.addEventListener(FeathersEventType.LAYOUT_DATA_CHANGE, child_layoutDataChangeHandler);
 			}
-			this.items.splice(index, 0, child);
+			var oldIndex:int = this.items.indexOf(child);
+			if(oldIndex == index)
+			{
+				return child;
+			}
+			if(oldIndex >= 0)
+			{
+				this.items.splice(oldIndex, 1);
+			}
+			var itemCount:int = this.items.length;
+			if(index == itemCount)
+			{
+				//faster than splice because it avoids gc
+				this.items[index] = child;
+			}
+			else
+			{
+				this.items.splice(index, 0, child);
+			}
 			this.invalidate(INVALIDATION_FLAG_LAYOUT);
 			return super.addChildAt(child, index);
 		}
@@ -253,6 +282,49 @@ package feathers.controls
 			this.items.splice(index, 1);
 			this.invalidate(INVALIDATION_FLAG_LAYOUT);
 			return child;
+		}
+
+		/**
+		 * @private
+		 */
+		override public function setChildIndex(child:DisplayObject, index:int):void
+		{
+			super.setChildIndex(child, index);
+			var oldIndex:int = this.items.indexOf(child);
+			if(oldIndex == index)
+			{
+				return;
+			}
+
+			//the super function already checks if oldIndex < 0, and throws an
+			//appropriate error, so no need to do it again!
+
+			this.items.splice(oldIndex, 1);
+			this.items.splice(index, 0, child);
+			this.invalidate(INVALIDATION_FLAG_LAYOUT);
+		}
+
+		/**
+		 * @private
+		 */
+		override public function swapChildrenAt(index1:int, index2:int):void
+		{
+			super.swapChildrenAt(index1, index2)
+			var child1:DisplayObject = this.items[index1];
+			var child2:DisplayObject = this.items[index2];
+			this.items[index1] = child2;
+			this.items[index2] = child1;
+			this.invalidate(INVALIDATION_FLAG_LAYOUT);
+		}
+
+		/**
+		 * @private
+		 */
+		override public function sortChildren(compareFunction:Function):void
+		{
+			super.sortChildren(compareFunction);
+			this.items.sort(compareFunction);
+			this.invalidate(INVALIDATION_FLAG_LAYOUT);
 		}
 
 		/**
@@ -290,13 +362,19 @@ package feathers.controls
 		 */
 		override protected function draw():void
 		{
-			const layoutInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_LAYOUT);
+			var layoutInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_LAYOUT);
 			var sizeInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_SIZE);
-			const clippingInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_CLIPPING);
+			var clippingInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_CLIPPING);
 			//we don't have scrolling, but a subclass might
-			const scrollInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_SCROLL);
+			var scrollInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_SCROLL);
 
-			if(scrollInvalid || sizeInvalid || layoutInvalid)
+			//scrolling only affects the layout is requiresLayoutOnScroll is true
+			if(!layoutInvalid && scrollInvalid && this._layout && this._layout.requiresLayoutOnScroll)
+			{
+				layoutInvalid = true;
+			}
+
+			if(sizeInvalid || layoutInvalid)
 			{
 				this.refreshViewPortBounds();
 				if(this._layout)
@@ -350,9 +428,9 @@ package feathers.controls
 			for(var i:int = 0; i < itemCount; i++)
 			{
 				var item:DisplayObject = this.items[i];
-				if(item is IFeathersControl)
+				if(item is IValidating)
 				{
-					IFeathersControl(item).validate();
+					IValidating(item).validate();
 				}
 				var itemMaxX:Number = item.x + item.width;
 				var itemMaxY:Number = item.y + item.height;
@@ -378,9 +456,9 @@ package feathers.controls
 			for(var i:int = 0; i < itemCount; i++)
 			{
 				var item:DisplayObject = this.items[i];
-				if(item is IFeathersControl)
+				if(item is IValidating)
 				{
-					IFeathersControl(item).validate();
+					IValidating(item).validate();
 				}
 			}
 		}

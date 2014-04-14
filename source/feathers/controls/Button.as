@@ -1,6 +1,6 @@
 /*
 Feathers
-Copyright 2012-2013 Joshua Tynjala. All Rights Reserved.
+Copyright 2012-2014 Joshua Tynjala. All Rights Reserved.
 
 This program is free software. You can redistribute and/or modify it in
 accordance with the terms of the accompanying license agreement.
@@ -12,8 +12,10 @@ package feathers.controls
 	import feathers.core.IFocusDisplayObject;
 	import feathers.core.ITextRenderer;
 	import feathers.core.IToggle;
+	import feathers.core.IValidating;
 	import feathers.core.PropertyProxy;
 	import feathers.events.FeathersEventType;
+	import feathers.skins.IStyleProvider;
 	import feathers.skins.StateWithToggleValueSelector;
 
 	import flash.geom.Point;
@@ -32,6 +34,21 @@ package feathers.controls
 	 * within the button's bounds (a tap or click that should trigger the
 	 * button).
 	 *
+	 * <p>The properties of the event object have the following values:</p>
+	 * <table class="innertable">
+	 * <tr><th>Property</th><th>Value</th></tr>
+	 * <tr><td><code>bubbles</code></td><td>false</td></tr>
+	 * <tr><td><code>currentTarget</code></td><td>The Object that defines the
+	 *   event listener that handles the event. For example, if you use
+	 *   <code>myButton.addEventListener()</code> to register an event listener,
+	 *   myButton is the value of the <code>currentTarget</code>.</td></tr>
+	 * <tr><td><code>data</code></td><td>null</td></tr>
+	 * <tr><td><code>target</code></td><td>The Object that dispatched the event;
+	 *   it is not always the Object listening for the event. Use the
+	 *   <code>currentTarget</code> property to always access the Object
+	 *   listening for the event.</td></tr>
+	 * </table>
+	 *
 	 * @eventType starling.events.Event.TRIGGERED
 	 */
 	[Event(name="triggered",type="starling.events.Event")]
@@ -41,6 +58,21 @@ package feathers.controls
 	 * selection may be changed by the user when <code>isToggle</code> is set to
 	 * <code>true</code>. The selection may be changed programmatically at any
 	 * time, regardless of the value of <code>isToggle</code>.
+	 *
+	 * <p>The properties of the event object have the following values:</p>
+	 * <table class="innertable">
+	 * <tr><th>Property</th><th>Value</th></tr>
+	 * <tr><td><code>bubbles</code></td><td>false</td></tr>
+	 * <tr><td><code>currentTarget</code></td><td>The Object that defines the
+	 *   event listener that handles the event. For example, if you use
+	 *   <code>myButton.addEventListener()</code> to register an event listener,
+	 *   myButton is the value of the <code>currentTarget</code>.</td></tr>
+	 * <tr><td><code>data</code></td><td>null</td></tr>
+	 * <tr><td><code>target</code></td><td>The Object that dispatched the event;
+	 *   it is not always the Object listening for the event. Use the
+	 *   <code>currentTarget</code> property to always access the Object
+	 *   listening for the event.</td></tr>
+	 * </table>
 	 *
 	 * @eventType starling.events.Event.CHANGE
 	 */
@@ -59,6 +91,21 @@ package feathers.controls
 	 * {
 	 *     // long press
 	 * });</listing>
+	 *
+	 * <p>The properties of the event object have the following values:</p>
+	 * <table class="innertable">
+	 * <tr><th>Property</th><th>Value</th></tr>
+	 * <tr><td><code>bubbles</code></td><td>false</td></tr>
+	 * <tr><td><code>currentTarget</code></td><td>The Object that defines the
+	 *   event listener that handles the event. For example, if you use
+	 *   <code>myButton.addEventListener()</code> to register an event listener,
+	 *   myButton is the value of the <code>currentTarget</code>.</td></tr>
+	 * <tr><td><code>data</code></td><td>null</td></tr>
+	 * <tr><td><code>target</code></td><td>The Object that dispatched the event;
+	 *   it is not always the Object listening for the event. Use the
+	 *   <code>currentTarget</code> property to always access the Object
+	 *   listening for the event.</td></tr>
+	 * </table>
 	 *
 	 * @eventType feathers.events.FeathersEventType.LONG_PRESS
 	 * @see #isLongPressEnabled
@@ -109,7 +156,7 @@ package feathers.controls
 		 *
 		 * <listing version="3.0">
 		 * var button:Button = new Button();
-		 * button.nameList.add( Button.ALTERNATE_NAME_CALL_TO_ACTION_BUTTON );
+		 * button.styleNameList.add( Button.ALTERNATE_NAME_CALL_TO_ACTION_BUTTON );
 		 * this.addChild( button );</listing>
 		 *
 		 * @see feathers.core.IFeathersControl#nameList
@@ -131,7 +178,7 @@ package feathers.controls
 		 *
 		 * <listing version="3.0">
 		 * var button:Button = new Button();
-		 * button.nameList.add( Button.ALTERNATE_NAME_QUIET_BUTTON );
+		 * button.styleNameList.add( Button.ALTERNATE_NAME_QUIET_BUTTON );
 		 * this.addChild( button );</listing>
 		 *
 		 * @see feathers.core.IFeathersControl#nameList
@@ -155,7 +202,7 @@ package feathers.controls
 		 *
 		 * <listing version="3.0">
 		 * var button:Button = new Button();
-		 * button.nameList.add( Button.ALTERNATE_NAME_DANGER_BUTTON );
+		 * button.styleNameList.add( Button.ALTERNATE_NAME_DANGER_BUTTON );
 		 * this.addChild( button );</listing>
 		 *
 		 * @see feathers.core.IFeathersControl#nameList
@@ -177,7 +224,7 @@ package feathers.controls
 		 *
 		 * <listing version="3.0">
 		 * var button:Button = new Button();
-		 * button.nameList.add( Button.ALTERNATE_NAME_BACK_BUTTON );
+		 * button.styleNameList.add( Button.ALTERNATE_NAME_BACK_BUTTON );
 		 * this.addChild( button );</listing>
 		 *
 		 * @see feathers.core.IFeathersControl#nameList
@@ -199,7 +246,7 @@ package feathers.controls
 		 *
 		 * <listing version="3.0">
 		 * var button:Button = new Button();
-		 * button.nameList.add( Button.ALTERNATE_NAME_FORWARD_BUTTON );
+		 * button.styleNameList.add( Button.ALTERNATE_NAME_FORWARD_BUTTON );
 		 * this.addChild( button );</listing>
 		 *
 		 * @see feathers.core.IFeathersControl#nameList
@@ -320,6 +367,8 @@ package feathers.controls
 		
 		/**
 		 * The icon and label will be aligned vertically to the top edge of the button.
+		 *
+		 * @see #verticalAlign
 		 */
 		public static const VERTICAL_ALIGN_TOP:String = "top";
 		
@@ -336,12 +385,22 @@ package feathers.controls
 		 * @see #verticalAlign
 		 */
 		public static const VERTICAL_ALIGN_BOTTOM:String = "bottom";
+
+		/**
+		 * The default <code>IStyleProvider</code> for all <code>Button</code>
+		 * components.
+		 *
+		 * @default null
+		 * @see feathers.core.FeathersControl#styleProvider
+		 */
+		public static var styleProvider:IStyleProvider;
 		
 		/**
 		 * Constructor.
 		 */
 		public function Button()
 		{
+			this._styleProvider = Button.styleProvider;
 			this.isQuickHitAreaEnabled = true;
 			this.addEventListener(TouchEvent.TOUCH, button_touchHandler);
 			this.addEventListener(Event.REMOVED_FROM_STAGE, button_removedFromStageHandler);
@@ -629,6 +688,7 @@ package feathers.controls
 		 * @default 0
 		 * 
 		 * @see #iconPosition
+		 * @see #minGap
 		 */
 		public function get gap():Number
 		{
@@ -645,6 +705,46 @@ package feathers.controls
 				return;
 			}
 			this._gap = value;
+			this.invalidate(INVALIDATION_FLAG_STYLES);
+		}
+
+		/**
+		 * @private
+		 */
+		protected var _minGap:Number = 0;
+
+		/**
+		 * If the value of the <code>gap</code> property is
+		 * <code>Number.POSITIVE_INFINITY</code>, meaning that the gap will
+		 * fill as much space as possible, the final calculated value will not be
+		 * smaller than the value of the <code>minGap</code> property.
+		 *
+		 * <p>The following example ensures that the gap is never smaller than
+		 * 20 pixels:</p>
+		 *
+		 * <listing version="3.0">
+		 * button.gap = Number.POSITIVE_INFINITY;
+		 * button.minGap = 20;</listing>
+		 *
+		 * @default 0
+		 *
+		 * @see #gap
+		 */
+		public function get minGap():Number
+		{
+			return this._minGap;
+		}
+
+		/**
+		 * @private
+		 */
+		public function set minGap(value:Number):void
+		{
+			if(this._minGap == value)
+			{
+				return;
+			}
+			this._minGap = value;
 			this.invalidate(INVALIDATION_FLAG_STYLES);
 		}
 		
@@ -706,7 +806,7 @@ package feathers.controls
 		 *
 		 * @see #VERTICAL_ALIGN_TOP
 		 * @see #VERTICAL_ALIGN_MIDDLE
-		 * @see #VERTICAL_ALIGN_RIGHT
+		 * @see #VERTICAL_ALIGN_BOTTOM
 		 */
 		public function get verticalAlign():String
 		{
@@ -2723,18 +2823,14 @@ package feathers.controls
 		 */
 		protected function autoSizeIfNeeded():Boolean
 		{
-			const needsWidth:Boolean = isNaN(this.explicitWidth);
-			const needsHeight:Boolean = isNaN(this.explicitHeight);
+			var needsWidth:Boolean = this.explicitWidth != this.explicitWidth; //isNaN
+			var needsHeight:Boolean = this.explicitHeight != this.explicitHeight; //isNaN
 			if(!needsWidth && !needsHeight)
 			{
 				return false;
 			}
 			this.refreshMaxLabelWidth(true);
 			this.labelTextRenderer.measureText(HELPER_POINT);
-			if(this.currentIcon is IFeathersControl)
-			{
-				IFeathersControl(this.currentIcon).validate();
-			}
 			var newWidth:Number = this.explicitWidth;
 			if(needsWidth)
 			{
@@ -2743,7 +2839,11 @@ package feathers.controls
 					if(this._iconPosition != ICON_POSITION_TOP && this._iconPosition != ICON_POSITION_BOTTOM &&
 						this._iconPosition != ICON_POSITION_MANUAL)
 					{
-						var adjustedGap:Number = this._gap == Number.POSITIVE_INFINITY ? Math.min(this._paddingLeft, this._paddingRight) : this._gap;
+						var adjustedGap:Number = this._gap;
+						if(adjustedGap == Number.POSITIVE_INFINITY)
+						{
+							adjustedGap = this._minGap;
+						}
 						newWidth = this.currentIcon.width + adjustedGap + HELPER_POINT.x;
 					}
 					else
@@ -2760,20 +2860,20 @@ package feathers.controls
 					newWidth = HELPER_POINT.x;
 				}
 				newWidth += this._paddingLeft + this._paddingRight;
-				if(isNaN(newWidth))
+				if(newWidth != newWidth) //isNaN
 				{
-					if(isNaN(this._originalSkinWidth))
+					newWidth = this._originalSkinWidth;
+					if(newWidth != newWidth)
 					{
 						newWidth = 0;
 					}
-					else
+				}
+				else if(this._originalSkinWidth == this._originalSkinWidth) //!isNaN
+				{
+					if(this._originalSkinWidth > newWidth)
 					{
 						newWidth = this._originalSkinWidth;
 					}
-				}
-				else if(!isNaN(this._originalSkinWidth))
-				{
-					newWidth = Math.max(newWidth, this._originalSkinWidth);
 				}
 			}
 
@@ -2784,7 +2884,11 @@ package feathers.controls
 				{
 					if(this._iconPosition == ICON_POSITION_TOP || this._iconPosition == ICON_POSITION_BOTTOM)
 					{
-						adjustedGap = this._gap == Number.POSITIVE_INFINITY ? Math.min(this._paddingTop, this._paddingBottom) : this._gap;
+						adjustedGap = this._gap;
+						if(adjustedGap == Number.POSITIVE_INFINITY)
+						{
+							adjustedGap = this._minGap;
+						}
 						newHeight = this.currentIcon.height + adjustedGap + HELPER_POINT.y;
 					}
 					else
@@ -2801,20 +2905,20 @@ package feathers.controls
 					newHeight = HELPER_POINT.y;
 				}
 				newHeight += this._paddingTop + this._paddingBottom;
-				if(isNaN(newHeight))
+				if(newHeight != newHeight)
 				{
-					if(isNaN(this._originalSkinHeight))
+					newHeight = this._originalSkinHeight;
+					if(newHeight != newHeight)
 					{
 						newHeight = 0;
 					}
-					else
+				}
+				else if(this._originalSkinHeight == this._originalSkinHeight) //!isNaN
+				{
+					if(this._originalSkinHeight > newHeight)
 					{
 						newHeight = this._originalSkinHeight;
 					}
-				}
-				else if(!isNaN(this._originalSkinHeight))
-				{
-					newHeight = Math.max(newHeight, this._originalSkinHeight);
 				}
 			}
 
@@ -2841,7 +2945,7 @@ package feathers.controls
 
 			const factory:Function = this._labelFactory != null ? this._labelFactory : FeathersControl.defaultTextRendererFactory;
 			this.labelTextRenderer = ITextRenderer(factory());
-			this.labelTextRenderer.nameList.add(this.labelName);
+			this.labelTextRenderer.styleNameList.add(this.labelName);
 			this.addChild(DisplayObject(this.labelTextRenderer));
 		}
 
@@ -2882,11 +2986,13 @@ package feathers.controls
 					this.addChildAt(this.currentSkin, 0);
 				}
 			}
-			if(this.currentSkin && (isNaN(this._originalSkinWidth) || isNaN(this._originalSkinHeight)))
+			if(this.currentSkin &&
+				(this._originalSkinWidth != this._originalSkinWidth || //isNaN
+				this._originalSkinHeight != this._originalSkinHeight))
 			{
-				if(this.currentSkin is IFeathersControl)
+				if(this.currentSkin is IValidating)
 				{
-					IFeathersControl(this.currentSkin).validate();
+					IValidating(this.currentSkin).validate();
 				}
 				this._originalSkinWidth = this.currentSkin.width;
 				this._originalSkinHeight = this.currentSkin.height;
@@ -2981,10 +3087,6 @@ package feathers.controls
 		 */
 		protected function layoutContent():void
 		{
-			if(this.currentIcon is IFeathersControl)
-			{
-				IFeathersControl(this.currentIcon).validate();
-			}
 			this.refreshMaxLabelWidth(false);
 			if(this._label && this.currentIcon)
 			{
@@ -3028,17 +3130,29 @@ package feathers.controls
 		 */
 		protected function refreshMaxLabelWidth(forMeasurement:Boolean):void
 		{
+			if(this.currentIcon is IValidating)
+			{
+				IValidating(this.currentIcon).validate();
+			}
 			var calculatedWidth:Number = this.actualWidth;
 			if(forMeasurement)
 			{
-				calculatedWidth = isNaN(this.explicitWidth) ? this._maxWidth : this.explicitWidth;
+				calculatedWidth = this.explicitWidth;
+				if(calculatedWidth != calculatedWidth) //isNaN
+				{
+					calculatedWidth = this._maxWidth;
+				}
 			}
 			if(this._label && this.currentIcon)
 			{
 				if(this._iconPosition == ICON_POSITION_LEFT || this._iconPosition == ICON_POSITION_LEFT_BASELINE ||
 					this._iconPosition == ICON_POSITION_RIGHT || this._iconPosition == ICON_POSITION_RIGHT_BASELINE)
 				{
-					const adjustedGap:Number = this._gap == Number.POSITIVE_INFINITY ? Math.min(this._paddingLeft, this._paddingRight) : this._gap;
+					var adjustedGap:Number = this._gap;
+					if(adjustedGap == Number.POSITIVE_INFINITY)
+					{
+						adjustedGap = this._minGap;
+					}
 					this.labelTextRenderer.maxWidth = calculatedWidth - this._paddingLeft - this._paddingRight - this.currentIcon.width - adjustedGap;
 				}
 				else
@@ -3340,7 +3454,7 @@ package feathers.controls
 		 */
 		protected function longPress_enterFrameHandler(event:Event):void
 		{
-			const accumulatedTime:int = (getTimer() - this._touchBeginTime) / 1000;
+			var accumulatedTime:Number = (getTimer() - this._touchBeginTime) / 1000;
 			if(accumulatedTime >= this._longPressDuration)
 			{
 				this.removeEventListener(Event.ENTER_FRAME, longPress_enterFrameHandler);

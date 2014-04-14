@@ -1,6 +1,6 @@
 /*
 Feathers
-Copyright 2012-2013 Joshua Tynjala. All Rights Reserved.
+Copyright 2012-2014 Joshua Tynjala. All Rights Reserved.
 
 This program is free software. You can redistribute and/or modify it in
 accordance with the terms of the accompanying license agreement.
@@ -8,26 +8,15 @@ accordance with the terms of the accompanying license agreement.
 package feathers.controls.supportClasses
 {
 	import feathers.controls.LayoutGroup;
-	import feathers.controls.Scroller;
-	import feathers.core.FeathersControl;
-	import feathers.core.IFeathersControl;
-	import feathers.events.FeathersEventType;
-	import feathers.layout.ILayout;
-	import feathers.layout.ILayoutDisplayObject;
-	import feathers.layout.IVirtualLayout;
-	import feathers.layout.LayoutBoundsResult;
-	import feathers.layout.ViewPortBounds;
-
-	import flash.geom.Point;
+	import feathers.core.IValidating;
 
 	import starling.display.DisplayObject;
-	import starling.events.Event;
 
 	/**
 	 * @private
 	 * Used internally by ScrollContainer. Not meant to be used on its own.
 	 */
-	public final class LayoutViewPort extends LayoutGroup implements IViewPort
+	public class LayoutViewPort extends LayoutGroup implements IViewPort
 	{
 		public function LayoutViewPort()
 		{
@@ -258,9 +247,9 @@ package feathers.controls.supportClasses
 			for(var i:int = 0; i < itemCount; i++)
 			{
 				var item:DisplayObject = this.items[i];
-				if(item is IFeathersControl)
+				if(item is IValidating)
 				{
-					IFeathersControl(item).validate();
+					IValidating(item).validate();
 				}
 				var itemX:Number = item.x;
 				var itemY:Number = item.y;
@@ -289,7 +278,7 @@ package feathers.controls.supportClasses
 			var maxWidth:Number = this.viewPortBounds.maxWidth;
 			var minHeight:Number = this.viewPortBounds.minHeight;
 			var maxHeight:Number = this.viewPortBounds.maxHeight;
-			var calculatedWidth:Number = maxX;
+			var calculatedWidth:Number = maxX - minX;
 			if(calculatedWidth < minWidth)
 			{
 				calculatedWidth = minWidth;
@@ -298,7 +287,7 @@ package feathers.controls.supportClasses
 			{
 				calculatedWidth = maxWidth;
 			}
-			var calculatedHeight:Number = maxY;
+			var calculatedHeight:Number = maxY - minY;
 			if(calculatedHeight < minHeight)
 			{
 				calculatedHeight = minHeight;

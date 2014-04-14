@@ -1,6 +1,6 @@
 /*
 Feathers
-Copyright 2012-2013 Joshua Tynjala. All Rights Reserved.
+Copyright 2012-2014 Joshua Tynjala. All Rights Reserved.
 
 This program is free software. You can redistribute and/or modify it in
 accordance with the terms of the accompanying license agreement.
@@ -8,11 +8,50 @@ accordance with the terms of the accompanying license agreement.
 package feathers.controls
 {
 	import feathers.controls.supportClasses.TextFieldViewPort;
+	import feathers.skins.IStyleProvider;
 
 	import flash.text.AntiAliasType;
 	import flash.text.GridFitType;
 	import flash.text.StyleSheet;
 	import flash.text.TextFormat;
+
+	import starling.events.Event;
+
+	/**
+	 * Dispatched when an anchor (<code>&lt;a&gt;</code>) element in the HTML
+	 * text is triggered when the <code>href</code> attribute begins with
+	 * <code>"event:"</code>. This event is dispatched when the internal
+	 * <code>flash.text.TextField</code> dispatches its own
+	 * <code>TextEvent.LINK</code>.
+	 *
+	 * <p>The <code>data</code> property of the <code>Event</code> object that
+	 * is dispatched by the <code>ScrollText</code> contains the value of the
+	 * <code>text</code> property of the <code>TextEvent</code> that is
+	 * dispatched by the <code>flash.text.TextField</code>.</p>
+	 *
+	 * <p>The following example listens for <code>Event.TRIGGERED</code> on a
+	 * <code>ScrollText</code> component:</p>
+	 *
+	 * <listing version="3.0">
+	 * var scrollText:ScrollText = new ScrollText();
+	 * scrollText.text = "&lt;a href=\"event:hello\"&gt;Hello&lt;/a&gt; World";
+	 * scrollText.addEventListener( Event.TRIGGERED, scrollText_triggeredHandler );
+	 * this.addChild( scrollText );</listing>
+	 *
+	 * <p>The following example shows a listener for <code>Event.TRIGGERED</code>:</p>
+	 *
+	 * <listing version="3.0">
+	 * function scrollText_triggeredHandler(event:Event):void
+	 * {
+	 *     trace( event.data ); //hello
+	 * }</listing>
+	 *
+	 * @eventType starling.events.Event.TRIGGERED
+	 *
+	 * @see flash.text.TextField
+	 * @see flash.events.TextEvent.LINK
+	 */
+	[Event(name="triggered",type="starling.events.Event")]
 
 	/**
 	 * Displays long passages of text in a scrollable container using the
@@ -87,6 +126,20 @@ package feathers.controls
 		public static const SCROLL_BAR_DISPLAY_MODE_NONE:String = "none";
 
 		/**
+		 * The vertical scroll bar will be positioned on the right.
+		 *
+		 * @see feathers.controls.Scroller#verticalScrollBarPosition
+		 */
+		public static const VERTICAL_SCROLL_BAR_POSITION_RIGHT:String = "right";
+
+		/**
+		 * The vertical scroll bar will be positioned on the left.
+		 *
+		 * @see feathers.controls.Scroller#verticalScrollBarPosition
+		 */
+		public static const VERTICAL_SCROLL_BAR_POSITION_LEFT:String = "left";
+
+		/**
 		 * @copy feathers.controls.Scroller#INTERACTION_MODE_TOUCH
 		 *
 		 * @see feathers.controls.Scroller#interactionMode
@@ -108,11 +161,36 @@ package feathers.controls
 		public static const INTERACTION_MODE_TOUCH_AND_SCROLL_BARS:String = "touchAndScrollBars";
 
 		/**
+		 * @copy feathers.controls.Scroller#DECELERATION_RATE_NORMAL
+		 *
+		 * @see feathers.controls.Scroller#decelerationRate
+		 */
+		public static const DECELERATION_RATE_NORMAL:Number = 0.998;
+
+		/**
+		 * @copy feathers.controls.Scroller#DECELERATION_RATE_FAST
+		 *
+		 * @see feathers.controls.Scroller#decelerationRate
+		 */
+		public static const DECELERATION_RATE_FAST:Number = 0.99;
+
+		/**
+		 * The default <code>IStyleProvider</code> for all <code>ScrollText</code>
+		 * components.
+		 *
+		 * @default null
+		 * @see feathers.core.FeathersControl#styleProvider
+		 */
+		public static var styleProvider:IStyleProvider;
+
+		/**
 		 * Constructor.
 		 */
 		public function ScrollText()
 		{
+			this._styleProvider = ScrollText.styleProvider;
 			this.textViewPort = new TextFieldViewPort();
+			this.textViewPort.addEventListener(Event.TRIGGERED, textViewPort_triggeredHandler);
 			this.viewPort = this.textViewPort;
 		}
 
@@ -215,6 +293,7 @@ package feathers.controls
 		 *
 		 * @default null
 		 *
+		 * @see #disabledTextFormat
 		 * @see flash.text.TextFormat
 		 */
 		public function get textFormat():TextFormat
@@ -232,6 +311,43 @@ package feathers.controls
 				return;
 			}
 			this._textFormat = value;
+			this.invalidate(INVALIDATION_FLAG_STYLES);
+		}
+
+		/**
+		 * @private
+		 */
+		protected var _disabledTextFormat:TextFormat;
+
+		/**
+		 * The font and styles used to draw the text when the component is disabled.
+		 *
+		 * <p>In the following example, the disabled text format is changed:</p>
+		 *
+		 * <listing version="3.0">
+		 * textRenderer.isEnabled = false;
+		 * textRenderer.disabledTextFormat = new TextFormat( "_sans", 16, 0xcccccc );</listing>
+		 *
+		 * @default null
+		 *
+		 * @see #textFormat
+		 * @see flash.text.TextFormat
+		 */
+		public function get disabledTextFormat():TextFormat
+		{
+			return this._disabledTextFormat;
+		}
+
+		/**
+		 * @private
+		 */
+		public function set disabledTextFormat(value:TextFormat):void
+		{
+			if(this._disabledTextFormat == value)
+			{
+				return;
+			}
+			this._disabledTextFormat = value;
 			this.invalidate(INVALIDATION_FLAG_STYLES);
 		}
 
@@ -829,6 +945,7 @@ package feathers.controls
 				this.textViewPort.sharpness = this._sharpness;
 				this.textViewPort.thickness = this._thickness;
 				this.textViewPort.textFormat = this._textFormat;
+				this.textViewPort.disabledTextFormat = this._disabledTextFormat;
 				this.textViewPort.styleSheet = this._styleSheet;
 				this.textViewPort.embedFonts = this._embedFonts;
 				this.textViewPort.paddingTop = this._textPaddingTop;
@@ -840,6 +957,14 @@ package feathers.controls
 			}
 
 			super.draw();
+		}
+
+		/**
+		 * @private
+		 */
+		protected function textViewPort_triggeredHandler(event:Event, link:String):void
+		{
+			this.dispatchEventWith(Event.TRIGGERED, false, link);
 		}
 	}
 }

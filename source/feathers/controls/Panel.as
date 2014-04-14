@@ -1,6 +1,6 @@
 /*
 Feathers
-Copyright 2012-2013 Joshua Tynjala. All Rights Reserved.
+Copyright 2012-2014 Joshua Tynjala. All Rights Reserved.
 
 This program is free software. You can redistribute and/or modify it in
 accordance with the terms of the accompanying license agreement.
@@ -10,8 +10,11 @@ package feathers.controls
 	import feathers.core.IFeathersControl;
 	import feathers.core.IFocusExtras;
 	import feathers.core.PropertyProxy;
+	import feathers.events.FeathersEventType;
+	import feathers.skins.IStyleProvider;
 
 	import starling.display.DisplayObject;
+	import starling.events.Event;
 
 	/**
 	 * A container with layout, optional scrolling, a header, and an optional
@@ -103,6 +106,20 @@ package feathers.controls
 		public static const SCROLL_BAR_DISPLAY_MODE_NONE:String = "none";
 
 		/**
+		 * The vertical scroll bar will be positioned on the right.
+		 *
+		 * @see feathers.controls.Scroller#verticalScrollBarPosition
+		 */
+		public static const VERTICAL_SCROLL_BAR_POSITION_RIGHT:String = "right";
+
+		/**
+		 * The vertical scroll bar will be positioned on the left.
+		 *
+		 * @see feathers.controls.Scroller#verticalScrollBarPosition
+		 */
+		public static const VERTICAL_SCROLL_BAR_POSITION_LEFT:String = "left";
+
+		/**
 		 * @copy feathers.controls.Scroller#INTERACTION_MODE_TOUCH
 		 *
 		 * @see feathers.controls.Scroller#interactionMode
@@ -122,6 +139,29 @@ package feathers.controls
 		 * @see feathers.controls.Scroller#interactionMode
 		 */
 		public static const INTERACTION_MODE_TOUCH_AND_SCROLL_BARS:String = "touchAndScrollBars";
+
+		/**
+		 * @copy feathers.controls.Scroller#DECELERATION_RATE_NORMAL
+		 *
+		 * @see feathers.controls.Scroller#decelerationRate
+		 */
+		public static const DECELERATION_RATE_NORMAL:Number = 0.998;
+
+		/**
+		 * @copy feathers.controls.Scroller#DECELERATION_RATE_FAST
+		 *
+		 * @see feathers.controls.Scroller#decelerationRate
+		 */
+		public static const DECELERATION_RATE_FAST:Number = 0.99;
+
+		/**
+		 * The default <code>IStyleProvider</code> for all <code>Panel</code>
+		 * components.
+		 *
+		 * @default null
+		 * @see feathers.core.FeathersControl#styleProvider
+		 */
+		public static var styleProvider:IStyleProvider;
 
 		/**
 		 * @private
@@ -147,6 +187,7 @@ package feathers.controls
 		public function Panel()
 		{
 			super();
+			this._styleProvider = Panel.styleProvider;
 		}
 
 		/**
@@ -326,10 +367,9 @@ package feathers.controls
 		 *
 		 * <p>If the subcomponent has its own subcomponents, their properties
 		 * can be set too, using attribute <code>&#64;</code> notation. For example,
-		 * to set the skin on the thumb of a <code>SimpleScrollBar</code>
-		 * which is in a <code>Scroller</code> which is in a <code>List</code>,
-		 * you can use the following syntax:</p>
-		 * <pre>list.scrollerProperties.&#64;verticalScrollBarProperties.&#64;thumbProperties.defaultSkin = new Image(texture);</pre>
+		 * to set the skin on the thumb which is in a <code>SimpleScrollBar</code>,
+		 * which is in a <code>List</code>, you can use the following syntax:</p>
+		 * <pre>list.verticalScrollBarProperties.&#64;thumbProperties.defaultSkin = new Image(texture);</pre>
 		 *
 		 * <p>Setting properties in a <code>headerFactory</code> function
 		 * instead of using <code>headerProperties</code> will result in better
@@ -505,10 +545,9 @@ package feathers.controls
 		 *
 		 * <p>If the subcomponent has its own subcomponents, their properties
 		 * can be set too, using attribute <code>&#64;</code> notation. For example,
-		 * to set the skin on the thumb of a <code>SimpleScrollBar</code>
-		 * which is in a <code>Scroller</code> which is in a <code>List</code>,
-		 * you can use the following syntax:</p>
-		 * <pre>list.scrollerProperties.&#64;verticalScrollBarProperties.&#64;thumbProperties.defaultSkin = new Image(texture);</pre>
+		 * to set the skin on the thumb which is in a <code>SimpleScrollBar</code>,
+		 * which is in a <code>List</code>, you can use the following syntax:</p>
+		 * <pre>list.verticalScrollBarProperties.&#64;thumbProperties.defaultSkin = new Image(texture);</pre>
 		 *
 		 * <p>Setting properties in a <code>footerFactory</code> function
 		 * instead of using <code>footerProperties</code> will result in better
@@ -595,6 +634,16 @@ package feathers.controls
 		/**
 		 * @private
 		 */
+		protected var _ignoreHeaderResizing:Boolean = false;
+
+		/**
+		 * @private
+		 */
+		protected var _ignoreFooterResizing:Boolean = false;
+
+		/**
+		 * @private
+		 */
 		override protected function draw():void
 		{
 			const headerFactoryInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_HEADER_FACTORY);
@@ -635,6 +684,11 @@ package feathers.controls
 			{
 				return false;
 			}
+
+			var oldIgnoreHeaderResizing:Boolean = this._ignoreHeaderResizing;
+			this._ignoreHeaderResizing = true;
+			var oldIgnoreFooterResizing:Boolean = this._ignoreFooterResizing;
+			this._ignoreFooterResizing = true;
 
 			const oldHeaderWidth:Number = this.header.width;
 			const oldHeaderHeight:Number = this.header.height;
@@ -683,6 +737,7 @@ package feathers.controls
 				this.footer.width = oldFooterWidth;
 				this.footer.height = oldFooterHeight;
 			}
+			this._ignoreFooterResizing = oldIgnoreFooterResizing;
 
 			return this.setSizeInternal(newWidth, newHeight, false);
 		}
@@ -700,24 +755,23 @@ package feathers.controls
 		 */
 		protected function createHeader():void
 		{
-			const oldDisplayListBypassEnabled:Boolean = this.displayListBypassEnabled;
-			this.displayListBypassEnabled = false;
 			if(this.header)
 			{
+				this.header.removeEventListener(FeathersEventType.RESIZE, header_resizeHandler);
 				var displayHeader:DisplayObject = DisplayObject(this.header);
 				this._focusExtrasBefore.splice(this._focusExtrasBefore.indexOf(displayHeader), 1);
-				this.removeChild(displayHeader, true);
+				this.removeRawChild(displayHeader, true);
 				this.header = null;
 			}
 
 			const factory:Function = this._headerFactory != null ? this._headerFactory : defaultHeaderFactory;
 			const headerName:String = this._customHeaderName != null ? this._customHeaderName : this.headerName;
 			this.header = IFeathersControl(factory());
-			this.header.nameList.add(headerName);
+			this.header.styleNameList.add(headerName);
+			this.header.addEventListener(FeathersEventType.RESIZE, header_resizeHandler);
 			displayHeader = DisplayObject(this.header);
-			this.addChild(displayHeader);
+			this.addRawChild(displayHeader);
 			this._focusExtrasBefore.push(displayHeader);
-			this.displayListBypassEnabled = oldDisplayListBypassEnabled;
 		}
 
 		/**
@@ -733,13 +787,12 @@ package feathers.controls
 		 */
 		protected function createFooter():void
 		{
-			const oldDisplayListBypassEnabled:Boolean = this.displayListBypassEnabled;
-			this.displayListBypassEnabled = false;
 			if(this.footer)
 			{
+				this.footer.removeEventListener(FeathersEventType.RESIZE, footer_resizeHandler);
 				var displayFooter:DisplayObject = DisplayObject(this.footer);
 				this._focusExtrasAfter.splice(this._focusExtrasAfter.indexOf(displayFooter), 1);
-				this.removeChild(displayFooter, true);
+				this.removeRawChild(displayFooter, true);
 				this.footer = null;
 			}
 
@@ -749,11 +802,11 @@ package feathers.controls
 			}
 			const footerName:String = this._customFooterName != null ? this._customFooterName : this.footerName;
 			this.footer = IFeathersControl(this._footerFactory());
-			this.footer.nameList.add(footerName);
+			this.footer.styleNameList.add(footerName);
+			this.footer.addEventListener(FeathersEventType.RESIZE, footer_resizeHandler);
 			displayFooter = DisplayObject(this.footer);
-			this.addChild(displayFooter);
+			this.addRawChild(displayFooter);
 			this._focusExtrasAfter.push(displayFooter);
-			this.displayListBypassEnabled = oldDisplayListBypassEnabled;
 		}
 
 		/**
@@ -795,6 +848,8 @@ package feathers.controls
 		{
 			super.calculateViewPortOffsets(forceScrollBars);
 
+			var oldIgnoreHeaderResizing:Boolean = this._ignoreHeaderResizing;
+			this._ignoreHeaderResizing = true;
 			const oldHeaderWidth:Number = this.header.width;
 			const oldHeaderHeight:Number = this.header.height;
 			this.header.width = useActualBounds ? this.actualWidth : this.explicitWidth;
@@ -804,9 +859,12 @@ package feathers.controls
 			this._topViewPortOffset += this.header.height;
 			this.header.width = oldHeaderWidth;
 			this.header.height = oldHeaderHeight;
+			this._ignoreHeaderResizing = oldIgnoreHeaderResizing;
 
 			if(this.footer)
 			{
+				var oldIgnoreFooterResizing:Boolean = this._ignoreFooterResizing;
+				this._ignoreFooterResizing = true;
 				const oldFooterWidth:Number = this.footer.width;
 				const oldFooterHeight:Number = this.footer.height;
 				this.footer.width = useActualBounds ? this.actualWidth : this.explicitWidth;
@@ -816,6 +874,7 @@ package feathers.controls
 				this._bottomViewPortOffset += this.footer.height;
 				this.footer.width = oldFooterWidth;
 				this.footer.height = oldFooterHeight;
+				this._ignoreFooterResizing = oldIgnoreFooterResizing;
 			}
 		}
 
@@ -826,17 +885,47 @@ package feathers.controls
 		{
 			super.layoutChildren();
 
+			var oldIgnoreHeaderResizing:Boolean = this._ignoreHeaderResizing;
+			this._ignoreHeaderResizing = true;
 			this.header.width = this.actualWidth;
 			this.header.height = NaN;
 			this.header.validate();
+			this._ignoreHeaderResizing = oldIgnoreHeaderResizing;
 
 			if(this.footer)
 			{
+				var oldIgnoreFooterResizing:Boolean = this._ignoreFooterResizing;
+				this._ignoreFooterResizing = true;
 				this.footer.width = this.actualWidth;
 				this.footer.height = NaN;
 				this.footer.validate();
 				this.footer.y = this.actualHeight - this.footer.height;
+				this._ignoreFooterResizing = oldIgnoreFooterResizing;
 			}
+		}
+
+		/**
+		 * @private
+		 */
+		protected function header_resizeHandler(event:Event):void
+		{
+			if(this._ignoreHeaderResizing)
+			{
+				return;
+			}
+			this.invalidate(INVALIDATION_FLAG_SIZE);
+		}
+
+		/**
+		 * @private
+		 */
+		protected function footer_resizeHandler(event:Event):void
+		{
+			if(this._ignoreFooterResizing)
+			{
+				return;
+			}
+			this.invalidate(INVALIDATION_FLAG_SIZE);
 		}
 	}
 }

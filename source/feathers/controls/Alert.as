@@ -1,12 +1,21 @@
+/*
+Feathers
+Copyright 2012-2014 Joshua Tynjala. All Rights Reserved.
+
+This program is free software. You can redistribute and/or modify it in
+accordance with the terms of the accompanying license agreement.
+*/
 package feathers.controls
 {
 	import feathers.core.FeathersControl;
 	import feathers.core.IFeathersControl;
 	import feathers.core.ITextRenderer;
+	import feathers.core.IValidating;
 	import feathers.core.PopUpManager;
 	import feathers.core.PropertyProxy;
 	import feathers.data.ListCollection;
 	import feathers.layout.VerticalLayout;
+	import feathers.skins.IStyleProvider;
 
 	import starling.display.DisplayObject;
 	import starling.events.Event;
@@ -23,6 +32,21 @@ package feathers.controls
 	 * the event object will contain the item from the <code>ButtonGroup</code>
 	 * data provider for the button that is triggered. If no button is
 	 * triggered, then the <code>data</code> property will be <code>null</code>.
+	 *
+	 * <p>The properties of the event object have the following values:</p>
+	 * <table class="innertable">
+	 * <tr><th>Property</th><th>Value</th></tr>
+	 * <tr><td><code>bubbles</code></td><td>false</td></tr>
+	 * <tr><td><code>currentTarget</code></td><td>The Object that defines the
+	 *   event listener that handles the event. For example, if you use
+	 *   <code>myButton.addEventListener()</code> to register an event listener,
+	 *   myButton is the value of the <code>currentTarget</code>.</td></tr>
+	 * <tr><td><code>data</code></td><td>null</td></tr>
+	 * <tr><td><code>target</code></td><td>The Object that dispatched the event;
+	 *   it is not always the Object listening for the event. Use the
+	 *   <code>currentTarget</code> property to always access the Object
+	 *   listening for the event.</td></tr>
+	 * </table>
 	 *
 	 * @eventType starling.events.Event.CLOSE
 	 */
@@ -125,6 +149,15 @@ package feathers.controls
 		public static var overlayFactory:Function;
 
 		/**
+		 * The default <code>IStyleProvider</code> for all <code>Alert</code>
+		 * components.
+		 *
+		 * @default null
+		 * @see feathers.core.FeathersControl#styleProvider
+		 */
+		public static var styleProvider:IStyleProvider;
+
+		/**
 		 * The default factory that creates alerts when <code>Alert.show()</code>
 		 * is called. To use a different factory, you need to set
 		 * <code>Alert.alertFactory</code> to a <code>Function</code>
@@ -158,7 +191,7 @@ package feathers.controls
 		 * }</listing>
 		 */
 		public static function show(message:String, title:String = null, buttons:ListCollection = null,
-			isModal:Boolean = true, isCentered:Boolean = true,
+			icon:DisplayObject = null, isModal:Boolean = true, isCentered:Boolean = true,
 			customAlertFactory:Function = null, customOverlayFactory:Function = null):Alert
 		{
 			var factory:Function = customAlertFactory;
@@ -170,6 +203,7 @@ package feathers.controls
 			alert.title = title;
 			alert.message = message;
 			alert.buttonsDataProvider = buttons;
+			alert.icon = icon;
 			factory = customOverlayFactory;
 			if(factory == null)
 			{
@@ -193,6 +227,7 @@ package feathers.controls
 		public function Alert()
 		{
 			super();
+			this._styleProvider = Alert.styleProvider;
 			this.headerName = DEFAULT_CHILD_NAME_HEADER;
 			this.footerName = DEFAULT_CHILD_NAME_BUTTON_GROUP;
 			this.buttonGroupFactory = defaultButtonGroupFactory;
@@ -285,6 +320,77 @@ package feathers.controls
 		/**
 		 * @private
 		 */
+		protected var _icon:DisplayObject;
+
+		/**
+		 * The alert's optional icon content to display next to the text.
+		 */
+		public function get icon():DisplayObject
+		{
+			return this._icon;
+		}
+
+		/**
+		 * @private
+		 */
+		public function set icon(value:DisplayObject):void
+		{
+			if(this._icon == value)
+			{
+				return;
+			}
+			var oldDisplayListBypassEnabled:Boolean = this.displayListBypassEnabled;
+			this.displayListBypassEnabled = false;
+			if(this._icon)
+			{
+				this.removeChild(this._icon);
+			}
+			this._icon = value;
+			if(this._icon)
+			{
+				this.addChild(this._icon);
+			}
+			this.displayListBypassEnabled = oldDisplayListBypassEnabled;
+			this.invalidate(INVALIDATION_FLAG_DATA);
+		}
+
+		/**
+		 * @private
+		 */
+		protected var _gap:Number = 0;
+
+		/**
+		 * The space, in pixels, between the alert's icon and its message text
+		 * renderer.
+		 *
+		 * <p>In the following example, the gap is set to 20 pixels:</p>
+		 *
+		 * <listing version="3.0">
+		 * alert.gap = 20;</listing>
+		 *
+		 * @default 0
+		 */
+		public function get gap():Number
+		{
+			return this._gap;
+		}
+
+		/**
+		 * @private
+		 */
+		public function set gap(value:Number):void
+		{
+			if(this._gap == value)
+			{
+				return;
+			}
+			this._gap = value;
+			this.invalidate(INVALIDATION_FLAG_LAYOUT);
+		}
+
+		/**
+		 * @private
+		 */
 		protected var _buttonsDataProvider:ListCollection;
 
 		/**
@@ -305,7 +411,7 @@ package feathers.controls
 				return;
 			}
 			this._buttonsDataProvider = value;
-			this.invalidate(INVALIDATION_FLAG_DATA);
+			this.invalidate(INVALIDATION_FLAG_STYLES);
 		}
 
 		/**
@@ -334,7 +440,7 @@ package feathers.controls
 		 * the alert:</p>
 		 *
 		 * <listing version="3.0">
-		 * header.messageFactory = function():ITextRenderer
+		 * alert.messageFactory = function():ITextRenderer
 		 * {
 		 *     var messageRenderer:TextFieldTextRenderer = new TextFieldTextRenderer();
 		 *     messageRenderer.textFormat = new TextFormat( "_sans", 12, 0xff0000 );
@@ -385,15 +491,14 @@ package feathers.controls
 		 * renderer is a <code>BitmapFontTextRenderer</code>):</p>
 		 *
 		 * <listing version="3.0">
-		 * header.messageProperties.textFormat = new BitmapFontTextFormat( bitmapFont );
-		 * header.messageProperties.wordWrap = true;</listing>
+		 * alert.messageProperties.textFormat = new BitmapFontTextFormat( bitmapFont );
+		 * alert.messageProperties.wordWrap = true;</listing>
 		 *
 		 * <p>If the subcomponent has its own subcomponents, their properties
 		 * can be set too, using attribute <code>&#64;</code> notation. For example,
-		 * to set the skin on the thumb of a <code>SimpleScrollBar</code>
-		 * which is in a <code>Scroller</code> which is in a <code>List</code>,
-		 * you can use the following syntax:</p>
-		 * <pre>list.scrollerProperties.&#64;verticalScrollBarProperties.&#64;thumbProperties.defaultSkin = new Image(texture);</pre>
+		 * to set the skin on the thumb which is in a <code>SimpleScrollBar</code>,
+		 * which is in a <code>List</code>, you can use the following syntax:</p>
+		 * <pre>list.verticalScrollBarProperties.&#64;thumbProperties.defaultSkin = new Image(texture);</pre>
 		 *
 		 * <p>Setting properties in a <code>messageFactory</code> function instead
 		 * of using <code>messageProperties</code> will result in better
@@ -522,10 +627,9 @@ package feathers.controls
 		 *
 		 * <p>If the subcomponent has its own subcomponents, their properties
 		 * can be set too, using attribute <code>&#64;</code> notation. For example,
-		 * to set the skin on the thumb of a <code>SimpleScrollBar</code>
-		 * which is in a <code>Scroller</code> which is in a <code>List</code>,
-		 * you can use the following syntax:</p>
-		 * <pre>list.scrollerProperties.&#64;verticalScrollBarProperties.&#64;thumbProperties.defaultSkin = new Image(texture);</pre>
+		 * to set the skin on the thumb which is in a <code>SimpleScrollBar</code>,
+		 * which is in a <code>List</code>, you can use the following syntax:</p>
+		 * <pre>list.verticalScrollBarProperties.&#64;thumbProperties.defaultSkin = new Image(texture);</pre>
 		 *
 		 * <p>Setting properties in a <code>buttonGroupFactory</code> function
 		 * instead of using <code>buttonGroupProperties</code> will result in better
@@ -579,10 +683,7 @@ package feathers.controls
 
 			if(textRendererInvalid)
 			{
-				const oldDisplayListBypassEnabled:Boolean = this.displayListBypassEnabled;
-				this.displayListBypassEnabled = true;
 				this.createMessage();
-				this.displayListBypassEnabled = oldDisplayListBypassEnabled;
 			}
 
 			if(textRendererInvalid || dataInvalid)
@@ -596,6 +697,94 @@ package feathers.controls
 			}
 
 			super.draw();
+
+			if(this._icon)
+			{
+				if(this._icon is IValidating)
+				{
+					IValidating(this._icon).validate();
+				}
+				this._icon.x = this._paddingLeft;
+				this._icon.y = this._topViewPortOffset + (this._viewPort.height - this._icon.height) / 2;
+			}
+		}
+
+		/**
+		 * @private
+		 */
+		override protected function autoSizeIfNeeded():Boolean
+		{
+			const needsWidth:Boolean = isNaN(this.explicitWidth);
+			const needsHeight:Boolean = isNaN(this.explicitHeight);
+			if(!needsWidth && !needsHeight)
+			{
+				return false;
+			}
+
+			if(this._icon is IValidating)
+			{
+				IValidating(this._icon).validate();
+			}
+
+			const oldHeaderWidth:Number = this.header.width;
+			const oldHeaderHeight:Number = this.header.height;
+			this.header.width = this.explicitWidth;
+			this.header.maxWidth = this._maxWidth;
+			this.header.height = NaN;
+			this.header.validate();
+
+			if(this.footer)
+			{
+				const oldFooterWidth:Number = this.footer.width;
+				const oldFooterHeight:Number = this.footer.height;
+				this.footer.width = this.explicitWidth;
+				this.footer.maxWidth = this._maxWidth;
+				this.footer.height = NaN;
+				this.footer.validate();
+			}
+
+			var newWidth:Number = this.explicitWidth;
+			var newHeight:Number = this.explicitHeight;
+			if(needsWidth)
+			{
+				newWidth = this._viewPort.width + this._rightViewPortOffset + this._leftViewPortOffset;
+				if(this._icon && !isNaN(this._icon.width))
+				{
+					newWidth += this._icon.width + this._gap;
+				}
+				newWidth = Math.max(newWidth, this.header.width);
+				if(this.footer)
+				{
+					newWidth = Math.max(newWidth, this.footer.width);
+				}
+				if(!isNaN(this.originalBackgroundWidth))
+				{
+					newWidth = Math.max(newWidth, this.originalBackgroundWidth);
+				}
+			}
+			if(needsHeight)
+			{
+				newHeight = this._viewPort.height;
+				if(this._icon && !isNaN(this._icon.height))
+				{
+					newHeight = Math.max(newHeight, this._icon.height);
+				}
+				newHeight += this._bottomViewPortOffset + this._topViewPortOffset
+				if(!isNaN(this.originalBackgroundHeight))
+				{
+					newHeight = Math.max(newHeight, this.originalBackgroundHeight);
+				}
+			}
+
+			this.header.width = oldHeaderWidth;
+			this.header.height = oldHeaderHeight;
+			if(this.footer)
+			{
+				this.footer.width = oldFooterWidth;
+				this.footer.height = oldFooterHeight;
+			}
+
+			return this.setSizeInternal(newWidth, newHeight, false);
 		}
 
 		/**
@@ -667,7 +856,7 @@ package feathers.controls
 			const factory:Function = this._messageFactory != null ? this._messageFactory : FeathersControl.defaultTextRendererFactory;
 			this.messageTextRenderer = ITextRenderer(factory());
 			const uiTextRenderer:IFeathersControl = IFeathersControl(this.messageTextRenderer);
-			uiTextRenderer.nameList.add(this.messageName);
+			uiTextRenderer.styleNameList.add(this.messageName);
 			uiTextRenderer.touchable = false;
 			this.addChild(DisplayObject(this.messageTextRenderer));
 		}
@@ -702,6 +891,25 @@ package feathers.controls
 				{
 					var propertyValue:Object = this._messageProperties[propertyName];
 					displayMessageRenderer[propertyName] = propertyValue;
+				}
+			}
+		}
+
+		/**
+		 * @private
+		 */
+		override protected function calculateViewPortOffsets(forceScrollBars:Boolean = false, useActualBounds:Boolean = false):void
+		{
+			super.calculateViewPortOffsets(forceScrollBars, useActualBounds);
+			if(this._icon)
+			{
+				if(this._icon is IValidating)
+				{
+					IValidating(this._icon).validate();
+				}
+				if(!isNaN(this._icon.width))
+				{
+					this._leftViewPortOffset += this._icon.width + this._gap;
 				}
 			}
 		}
